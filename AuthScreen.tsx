@@ -19,7 +19,19 @@ export function AuthScreen({ onSignIn, pendingInviteCode }: AuthScreenProps) {
     try {
       await onSignIn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '登入失敗，請稍後再試');
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('auth/unauthorized-domain')) {
+        const host = typeof window !== 'undefined' ? window.location.hostname : '目前網域';
+        setError(
+          `網域「${host}」尚未加入 Firebase 授權網域。請前往 Firebase Console → Authentication → Settings → Authorized domains 新增此網域後重試。`
+        );
+      } else if (msg.includes('auth/popup-blocked')) {
+        setError('瀏覽器封鎖了 Google 登入彈窗，請允許此網站開啟彈出視窗後再試一次。');
+      } else if (msg.includes('auth/popup-closed-by-user')) {
+        setError('已取消 Google 登入視窗。');
+      } else {
+        setError(err instanceof Error ? err.message : '登入失敗，請稍後再試');
+      }
     } finally {
       setLoading(false);
     }
